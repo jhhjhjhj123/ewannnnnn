@@ -1,5 +1,6 @@
 require 'stripe'
 require 'sinatra'
+require 'sinatra/reloader'
 require 'dotenv'
 require './config_helper.rb'
 
@@ -46,7 +47,7 @@ post '/create-payment-intent' do
   currency = data['currency']
   params = {
     payment_method_types: [payment_method_type],
-    amount: 1999, # Charge the customer 19.99 in the given currency.
+    amount: 5999, # Charge the customer 59.99 in the given currency.
     currency: currency
   }
 

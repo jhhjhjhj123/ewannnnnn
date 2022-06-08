@@ -2,7 +2,7 @@ require 'capybara_support'
 
 RSpec.describe 'Custom payment flow', type: :system do
   before do
-    visit server_url('/')
+    visit app_url('/')
   end
 
   example 'Card: happy path' do
@@ -29,7 +29,7 @@ RSpec.describe 'Custom payment flow', type: :system do
       within_frame first('iframe') do
         click_on 'Agree'
         find('span', text: 'Simulate successful verification').click
-        click_on 'Pay CA$19.99'
+        click_on 'Pay CA$59.99'
       end
     end
 
@@ -86,7 +86,7 @@ RSpec.describe 'Custom payment flow', type: :system do
     end
 
     click_on 'Pay'
-    expect(page).to have_content('EPS test payment page')
+    expect(page).to have_content('eps test payment page')
 
     click_on 'Authorize Test Payment'
     expect(page).to have_content('Payment succeeded')
@@ -188,8 +188,12 @@ RSpec.describe 'Custom payment flow', type: :system do
     click_on 'OXXO'
 
     click_on 'Pay'
-    expect(page).to have_no_content('succeeded')
-    expect(page).to have_content('The payment method type provided: oxxo is invalid') # This payment method is available to Stripe accounts in MX and your Stripe account is in US.
+
+    within_frame find('iframe[name*=__privateStripeFrame]') do
+      within_frame find('iframe[title*="OXXO Voucher"]') do
+        expect(page).to have_content('Instructions to pay your OXXO')
+      end
+    end
   end
 
   example 'Alipay' do

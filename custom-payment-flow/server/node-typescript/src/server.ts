@@ -1,5 +1,6 @@
 import env from "dotenv";
 import path from "path";
+import cors from "cors";
 // Replace if using a different env file or config.
 env.config({ path: "./.env" });
 
@@ -34,6 +35,9 @@ app.use(
     }
   }
 );
+app.use(cors({
+  origin: 'http://localhost:3000'
+}));
 
 app.get("/", (_: express.Request, res: express.Response): void => {
   // Serve checkout page.
@@ -51,10 +55,10 @@ app.get("/config", (_: express.Request, res: express.Response): void => {
 app.post(
   "/create-payment-intent",
   async (req: express.Request, res: express.Response): Promise<void> => {
-    const { currency, paymentMethodType }: { currency: string, paymentMethodType: string } = req.body;
+    const { currency, paymentMethodType, paymentMethodOptions }: { currency: string, paymentMethodType: string, paymentMethodOptions?: object  } = req.body;
     // Create a PaymentIntent with the order amount and currency.
     const params: Stripe.PaymentIntentCreateParams = {
-      amount: 1999,
+      amount: 5999,
       currency,
       payment_method_types: [paymentMethodType],
     };
@@ -70,6 +74,19 @@ app.post(
           },
         },
       };
+    } else if (paymentMethodType === 'customer_balance') {
+      params.payment_method_data = {
+        type: 'customer_balance',
+      } as any
+      params.confirm = true
+      params.customer = req.body.customerId || await stripe.customers.create().then(data => data.id)
+    }
+
+    /**
+     * If API given this data, we can overwride it
+     */
+    if (paymentMethodOptions) {
+      params.payment_method_options = paymentMethodOptions
     }
 
     try {
@@ -80,6 +97,7 @@ app.post(
       // Send publishable key and PaymentIntent client_secret to client.
       res.send({
         clientSecret: paymentIntent.client_secret,
+        nextAction: paymentIntent.next_action,
       });
     } catch (e) {
       res.status(400).send({
